@@ -26,14 +26,5 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.12.4",
     "sequelize-cli": "^5.4.0"
-  },
-  "rules": {
-    "linebreak-style": 0,
-    "global-require": 0,
-    "eslint linebreak-style": [
-      0,
-      "error",
-      "windows"
-    ]
   }
 }
