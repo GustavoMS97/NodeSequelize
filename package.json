@@ -12,6 +12,7 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "express": "^4.16.4",
+    "jsonwebtoken": "^8.5.1",
     "mysql2": "^1.6.5",
     "nodemon": "^1.18.10",
     "sequelize": "^5.1.0"
@@ -25,5 +26,14 @@
     "eslint-plugin-prettier": "^3.0.1",
     "eslint-plugin-react": "^7.12.4",
     "sequelize-cli": "^5.4.0"
+  },
+  "rules": {
+    "linebreak-style": 0,
+    "global-require": 0,
+    "eslint linebreak-style": [
+      0,
+      "error",
+      "windows"
+    ]
   }
 }

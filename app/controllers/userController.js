@@ -1,28 +1,56 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
+
 const { User } = require('../models/');
+const authMiddleware = require('../middleware/auth');
+const authConfig = require('../../config/auth.json');
 
 const router = express.Router();
 
+function generateToken(params = {}) {
+  return jwt.sign(params, authConfig.secret, {
+    expiresIn: 60 * 60 * 10, // 10 HORAS
+  });
+}
+
+// Criar
+router.post('/', async (req, res) => {
+  const user = await User.create(req.body);
+  delete user.dataValues.password;
+  return res.status(201).send(user);
+});
+
+// Login
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const userArray = await User.findAll({
+    where: {
+      email,
+      password,
+    },
+  });
+  if (userArray && userArray.length > 0 && userArray.length === 1) {
+    const token = generateToken({
+      id: userArray[0].dataValues.id,
+      email: userArray[0].dataValues.email,
+    });
+    return res.status(200).send({ token });
+  }
+  return res.status(406).send({ message: 'Error login in, user not found!' });
+});
+
 // Listar todos
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   const userList = await User.findAll({});
   userList.forEach((user) => {
-    console.log(user);
     delete user.dataValues.password;
   });
 
   return res.status(200).send(userList);
 });
 
-// Criar
-router.post('/', async (req, res) => {
-  const user = await User.create(req.body);
-  delete user.password;
-  return res.status(201).send(user);
-});
-
 // Buscar
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   if (!req.params.id) {
     return res.status(400).send({ message: 'Id was not provided in the URL' });
   }
@@ -33,13 +61,15 @@ router.get('/:id', async (req, res) => {
     },
   });
 
-  delete user.password;
-
-  return res.status(200).send(user);
+  if (user && user.length > 0 && user.length === 1) {
+    delete user[0].dataValues.password;
+    return res.status(200).send(user[0]);
+  }
+  return res.status().send({ message: 'User does not exists' });
 });
 
 // Editar
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   if (!req.params.id) {
     return res.status(400).send({ message: 'Id was not provided in the URL' });
   }
@@ -57,7 +87,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Deletar
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   if (!req.params.id) {
     return res.status(400).send({ message: 'Id was not provided in the URL' });
   }
