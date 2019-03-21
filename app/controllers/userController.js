@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const { User } = require('../models/');
 const authMiddleware = require('../middleware/auth');
@@ -15,6 +16,14 @@ function generateToken(params = {}) {
 
 // Criar
 router.post('/', async (req, res) => {
+  const checkedUser = await User.findAll({
+    where: { email: req.body.email, password: req.body.password },
+  });
+
+  if (checkedUser && checkedUser.length > 0) {
+    return res.status(406).send({ message: 'User already exists' });
+  }
+
   const user = await User.create(req.body);
   delete user.dataValues.password;
   return res.status(201).send(user);
@@ -23,10 +32,16 @@ router.post('/', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  const hash = crypto
+    .createHash('RSA-SHA256')
+    .update(password)
+    .update(authConfig.salt)
+    .digest('hex');
+
   const userArray = await User.findAll({
     where: {
       email,
-      password,
+      password: hash,
     },
   });
   if (userArray && userArray.length > 0 && userArray.length === 1) {
