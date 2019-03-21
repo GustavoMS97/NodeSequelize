@@ -16,17 +16,24 @@ function generateToken(params = {}) {
 
 // Criar
 router.post('/', async (req, res) => {
-  const checkedUser = await User.findAll({
-    where: { email: req.body.email, password: req.body.password },
-  });
+  try {
+    const checkedUser = await User.findAll({
+      where: { email: req.body.email, password: req.body.password },
+    });
 
-  if (checkedUser && checkedUser.length > 0) {
-    return res.status(406).send({ message: 'User already exists' });
+    if (checkedUser && checkedUser.length > 0) {
+      return res.status(406).send({ message: 'User already exists' });
+    }
+
+    const user = await User.create(req.body);
+    if (user.dataValues.password) {
+      delete user.dataValues.password;
+      return res.status(201).send(user);
+    }
+    return res.status(401).send({ message: 'Malformatted request' });
+  } catch (error) {
+    return res.status(400).send(error);
   }
-
-  const user = await User.create(req.body);
-  delete user.dataValues.password;
-  return res.status(201).send(user);
 });
 
 // Login
@@ -109,7 +116,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
   const response = await User.destroy({
     where: {
-      id: req.params.id,
+      id: parseInt(req.params.id, 10),
     },
   });
   const message = response > 0 ? 'Successfully deleted!' : 'Data not found';
