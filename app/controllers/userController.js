@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-const { User } = require('../models/');
+const { User, Post } = require('../models/');
 const authMiddleware = require('../middleware/auth');
 const authConfig = require('../../config/auth.json');
 
@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
       delete user.dataValues.password;
       return res.status(201).send(user);
     }
-    return res.status(401).send({ message: 'Malformatted request' });
+    return res.status(400).send({ message: 'Malformatted request' });
   } catch (error) {
     return res.status(400).send(error);
   }
@@ -73,21 +73,29 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // Buscar
 router.get('/:id', authMiddleware, async (req, res) => {
-  if (!req.params.id) {
-    return res.status(400).send({ message: 'Id was not provided in the URL' });
+  try {
+    if (!req.params.id) {
+      return res.status(400).send({ message: 'Id was not provided in the URL' });
+    }
+    const user = await User.findOne({
+      where: {
+        id: req.params.id,
+      },
+    });
+    if (user && user.dataValues) {
+      const posts = await Post.findAll({ where: { user_id: req.userId } });
+      delete user.dataValues.password;
+      let returnValue = user.dataValues;
+      if (posts && posts.length > 0) {
+        const postArray = posts.map(post => post.dataValues);
+        returnValue = { ...returnValue, posts: postArray };
+      }
+      return res.status(200).send(returnValue);
+    }
+    return res.status(400).send({ message: 'User does not exists' });
+  } catch (error) {
+    return res.status(400).send({ message: 'Error finding user.' });
   }
-
-  const user = await User.findAll({
-    where: {
-      id: req.params.id,
-    },
-  });
-
-  if (user && user.length > 0 && user.length === 1) {
-    delete user[0].dataValues.password;
-    return res.status(200).send(user[0]);
-  }
-  return res.status().send({ message: 'User does not exists' });
 });
 
 // Editar
