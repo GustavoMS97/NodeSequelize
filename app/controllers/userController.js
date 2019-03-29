@@ -56,7 +56,7 @@ router.post('/login', async (req, res) => {
       id: userArray[0].dataValues.id,
       email: userArray[0].dataValues.email,
     });
-    return res.status(200).send({ token });
+    return res.status(200).send({ token, type: 'Bearer' });
   }
   return res.status(406).send({ message: 'Error login in, user not found!' });
 });
