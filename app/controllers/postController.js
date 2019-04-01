@@ -42,16 +42,12 @@ router.get('/me', authMiddleware, async (req, res) => {
 router.get('/', authMiddleware, async (req, res) => {
   try{
     const posts = await Post.findAll({});
-
     for (const post of posts) {
       const user = await User.findOne({where: {
         id: post.user_id,
       }});
-      console.log(user.dataValues.id);
       post.dataValues['owner'] = user.dataValues;
     }
-
-    console.log(posts);
     return res.status(200).send(posts);
   }catch(error) {
     return res.status(400).send(error);
