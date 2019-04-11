@@ -72,7 +72,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Buscar
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id(\\d+)/', authMiddleware, async (req, res) => {
   try {
     if (!req.params.id) {
       return res.status(400).send({ message: 'Id was not provided in the URL' });
@@ -95,6 +95,29 @@ router.get('/:id', authMiddleware, async (req, res) => {
     return res.status(400).send({ message: 'User does not exists' });
   } catch (error) {
     return res.status(400).send({ message: 'Error finding user.' });
+  }
+});
+
+//Buscar a si mesmo.
+router.get('/me', authMiddleware, async (req, res) => {
+  try{
+    const user = await User.findOne({
+      where: {
+        id: req.userId,
+      },
+    });
+    if(user && user.dataValues) {
+      const posts = await Post.findAll({ where: { user_id: req.userId } });
+      delete user.dataValues.password;
+      let returnValue = user.dataValues;
+      if (posts && posts.length > 0) {
+        const postArray = posts.map(post => post.dataValues);
+        returnValue = { ...returnValue, posts: postArray };
+      }
+      return res.status(200).send(returnValue);
+    }
+  }catch(error) {
+    return res.status(406).send({message: 'Error fetching user'});
   }
 });
 
